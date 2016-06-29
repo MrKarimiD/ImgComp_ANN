@@ -17,11 +17,11 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_train_button_clicked()
 {
+    //Read Input Image
     QString fileAddress = QFileDialog::getOpenFileName(this,tr("Select Your Source Image"), "/home", tr("Image Files (*.png *.jpg *.bmp)"));
     ui->imgAdd_lineEdit->setText(fileAddress);
     Mat inputFrame, sourceFrame = imread(fileAddress.toStdString());
     cvtColor(sourceFrame, inputFrame, CV_RGB2GRAY);
-    imshow("gray",inputFrame);
 
     // Generating train data set
     srand (time(NULL));
@@ -30,9 +30,9 @@ void MainWindow::on_train_button_clicked()
     {
         int cols = rand() % (inputFrame.cols - blockSize);
         int rows = rand() % (inputFrame.rows - blockSize);
-        qDebug()<<"cols: "<<cols<<" , rows: "<<rows;
-        Mat tmp = inputFrame(Rect(cols ,rows , blockSize, blockSize));
-        train_set.push_back(tmp);
+        Mat dataItem, tmp = inputFrame(Rect(cols ,rows , blockSize, blockSize));
+        tmp.convertTo(dataItem, CV_32F);
+        train_set.push_back(dataItem);
     }
 
     FileStorage fs("nn.yml", FileStorage::WRITE);
@@ -58,7 +58,6 @@ void MainWindow::on_train_button_clicked()
     neural_network->setActivationFunction(ml::ANN_MLP::SIGMOID_SYM, 1, 1);
 
     neural_network->train(train_data);
-
     if (neural_network->isTrained()) {
         neural_network->write(fs);
         qDebug()<< "It's OK!";

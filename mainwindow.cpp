@@ -35,11 +35,12 @@ void MainWindow::on_train_button_clicked()
         train_set.push_back(dataItem);
     }
 
+    //Training
     FileStorage fs("nn.yml", FileStorage::WRITE);
 
-    int input_neurons = 64;
-    int hidden_neurons = 16;
-    int output_neurons = 64;
+    int input_neurons = 8; // It should be equals to number of cols
+    int hidden_neurons = 4;
+    int output_neurons = 8;
 
     Ptr<ml::TrainData> train_data = ml::TrainData::create(train_set, ml::ROW_SAMPLE, train_set);
 

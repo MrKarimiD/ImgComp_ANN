@@ -37,6 +37,7 @@ private:
     Ui::MainWindow *ui;
     int numberOfTrainData;
     int blockSize;
+    int test;
 
     double sigmoidFunction(double input);
 };

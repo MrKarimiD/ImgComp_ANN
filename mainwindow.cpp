@@ -7,7 +7,8 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     blockSize = 8;
-    numberOfTrainData = 100;
+    numberOfTrainData = 1000;
+    test = 1;
 }
 
 MainWindow::~MainWindow()
@@ -38,7 +39,7 @@ void MainWindow::on_train_button_clicked()
         {
             for(int c = 0; c < blockSize; c++)
             {
-                dataItem.at<uchar>(r*blockSize + c ,0) = tmp.at<uchar>(r ,c);
+                dataItem.at<float>(r*blockSize + c ,0) = tmp.at<float>(r ,c);
             }
         }
 
@@ -78,14 +79,12 @@ void MainWindow::on_train_button_clicked()
         qDebug()<< "It's OK!";
     }
     fs.release();
-    qDebug()<<"Training: Complete!";
-
-    int numOfBlocksInRow = inputFrame.rows / blockSize;
-    int numOfBlocksInCol = inputFrame.cols / blockSize;
+    qDebug()<<"Training: Completed!";
 
     //Compressing
     Mat newData, padFrame, compresedData;
     copyMakeBorder( inputFrame, padFrame, 0, blockSize, 0, blockSize, BORDER_REPLICATE);
+    imshow("pad",padFrame);
     for(int r = 0; r*blockSize < inputFrame.rows; r++)
     {
         for(int c = 0; c*blockSize < inputFrame.cols; c++)
@@ -97,7 +96,7 @@ void MainWindow::on_train_button_clicked()
             {
                 for(int j = 0; j < blockSize; j++)
                 {
-                    dataItem.at<uchar>(i*blockSize + j ,0) = tmp.at<uchar>(i ,j);
+                    dataItem.at<float>(i*blockSize + j ,0) = tmp.at<float>(i ,j);
                 }
             }
 
@@ -115,13 +114,13 @@ void MainWindow::on_train_button_clicked()
         Mat dataItem(hidden_neurons, 1, CV_32F);
         for(int i = 0; i < hidden_neurons; i++)
         {
-            double net = double(weights.at<uchar>(0,i));
+            float net = weights.at<double>(0,i);
             for(int j = 0; j < input_neurons ; j++)
             {
-                net += weights.at<uchar>(j+1,i)*newData.at<uchar>(j,k);
+                net += weights.at<double>(j+1,i)*newData.at<float>(j,k);
             }
             double o = sigmoidFunction(net);
-            dataItem.at<uchar>(i,0) = o;
+            dataItem.at<float>(i,0) = o;
         }
 
         if( compresedData.empty() )
@@ -131,6 +130,7 @@ void MainWindow::on_train_button_clicked()
     }
     qDebug()<<"Frame Compressed: Completed!";
     qDebug()<<"Compressed size: "<<compresedData.rows<<" , "<<compresedData.cols;
+    test++;
 
     Mat outputData, decompresedData;
     //Decompressing
@@ -140,13 +140,13 @@ void MainWindow::on_train_button_clicked()
         Mat dataItem(output_neurons, 1, CV_32F);
         for(int i = 0; i < output_neurons; i++)
         {
-            double net = double(weights2.at<uchar>(0,i));
+            double net = weights2.at<double>(0,i);
             for(int j = 0; j < hidden_neurons ; j++)
             {
-                net += weights2.at<uchar>(j+1,i)*compresedData.at<uchar>(j,k);
+                net += weights2.at<double>(j+1,i)*compresedData.at<float>(j,k);
             }
             double o = sigmoidFunction(net);
-            dataItem.at<uchar>(i,0) = o;
+            dataItem.at<float>(i,0) = o;
         }
 
         if( outputData.empty() )
@@ -165,7 +165,7 @@ void MainWindow::on_train_button_clicked()
         {
             Mat eachCol;
             for(int n = 0; n< blockSize;n++)
-                eachCol.push_back(outputData.at<uchar>((i*blockSize)+n, j));
+                eachCol.push_back(outputData.at<float>((i*blockSize)+n, j));
 
             if( dataItem.empty() )
                 eachCol.copyTo(dataItem);
@@ -191,9 +191,17 @@ void MainWindow::on_train_button_clicked()
     }
     qDebug()<<"Frame reconstructed: Completed!";
     qDebug()<<"decompresedData size: "<<decompresedData.rows<<" , "<<decompresedData.cols;
+
+    Mat finalFrame;
+    decompresedData.convertTo(finalFrame, CV_8U,255,0);
+
+    imshow("inputFrame", inputFrame);
+    imshow("final", finalFrame);
 }
 
 double MainWindow::sigmoidFunction(double input)
 {
+    if(test == 0)
+        qDebug()<<"input: "<<input;
     return 1/(1+exp(-input));
 }

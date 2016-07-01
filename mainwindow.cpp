@@ -104,4 +104,32 @@ void MainWindow::on_train_button_clicked()
                 hconcat(newData, dataItem, newData);
         }
     }
+    qDebug()<<"Source frame convereted: Completed!";
+
+    Mat weights = neural_network->getWeights(1);
+    for(int k = 0; k < newData.cols; k++ )
+    {
+        Mat dataItem(hidden_neurons, 1, CV_32F);
+        for(int i = 0; i < hidden_neurons; i++)
+        {
+            double net = double(weights.at<uchar>(0,i));
+            for(int j = 0; j < input_neurons ; j++)
+            {
+                net += weights.at<uchar>(j+1,i)*newData.at<uchar>(j,k);
+            }
+            double o = sigmoidFunction(net);
+            dataItem.at<uchar>(i,0) = o;
+        }
+
+        if( compresedData.empty() )
+            dataItem.copyTo(compresedData);
+        else
+            hconcat(compresedData, dataItem, compresedData);
+    }
+    qDebug()<<"Frame Compressed: Completed!";
+}
+
+double MainWindow::sigmoidFunction(double input)
+{
+    return 1/(1+exp(-input));
 }

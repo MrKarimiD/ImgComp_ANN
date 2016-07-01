@@ -31,7 +31,7 @@ void MainWindow::on_train_button_clicked()
     {
         int cols = rand() % (inputFrame.cols - blockSize);
         int rows = rand() % (inputFrame.rows - blockSize);
-        Mat tmp, tmp2 = inputFrame(Rect(rows ,cols , blockSize, blockSize));
+        Mat tmp, tmp2 = inputFrame(Rect( cols, rows, blockSize, blockSize));
         Mat dataItem(blockSize*blockSize, 1, CV_32F);
         tmp2.convertTo(tmp, CV_32F);
         for(int r = 0; r < blockSize; r++)
@@ -88,7 +88,7 @@ void MainWindow::on_train_button_clicked()
         for(int c = 0; c*blockSize < inputFrame.cols; c++)
         {
             Mat dataItem(blockSize*blockSize, 1, CV_32F);
-            Mat tmp, tmp2 = padFrame(Rect(r*blockSize ,c*blockSize , blockSize, blockSize));
+            Mat tmp, tmp2 = padFrame(Rect(c*blockSize, r*blockSize, blockSize, blockSize));
             tmp2.convertTo(tmp, CV_32F);
             for(int i = 0; i < blockSize; i++)
             {

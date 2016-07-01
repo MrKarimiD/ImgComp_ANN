@@ -80,6 +80,9 @@ void MainWindow::on_train_button_clicked()
     fs.release();
     qDebug()<<"Training: Complete!";
 
+    int numOfBlocksInRow = inputFrame.rows / blockSize;
+    int numOfBlocksInCol = inputFrame.cols / blockSize;
+
     //Compressing
     Mat newData, padFrame, compresedData;
     copyMakeBorder( inputFrame, padFrame, 0, blockSize, 0, blockSize, BORDER_REPLICATE);
@@ -127,6 +130,67 @@ void MainWindow::on_train_button_clicked()
             hconcat(compresedData, dataItem, compresedData);
     }
     qDebug()<<"Frame Compressed: Completed!";
+    qDebug()<<"Compressed size: "<<compresedData.rows<<" , "<<compresedData.cols;
+
+    Mat outputData, decompresedData;
+    //Decompressing
+    Mat weights2 = neural_network->getWeights(2);
+    for(int k = 0; k < compresedData.cols; k++ )
+    {
+        Mat dataItem(output_neurons, 1, CV_32F);
+        for(int i = 0; i < output_neurons; i++)
+        {
+            double net = double(weights2.at<uchar>(0,i));
+            for(int j = 0; j < hidden_neurons ; j++)
+            {
+                net += weights2.at<uchar>(j+1,i)*compresedData.at<uchar>(j,k);
+            }
+            double o = sigmoidFunction(net);
+            dataItem.at<uchar>(i,0) = o;
+        }
+
+        if( outputData.empty() )
+            dataItem.copyTo(outputData);
+        else
+            hconcat(outputData, dataItem, outputData);
+    }
+    qDebug()<<"Output Calculated: Completed!";
+    qDebug()<<"outputData size: "<<outputData.rows<<" , "<<outputData.cols;
+
+    Mat rowOfData;
+    for(int j = 0; j < outputData.cols; j++)
+    {
+        Mat dataItem;
+        for(int i = 0; i*blockSize < blockSize*blockSize; i++)
+        {
+            Mat eachCol;
+            for(int n = 0; n< blockSize;n++)
+                eachCol.push_back(outputData.at<uchar>((i*blockSize)+n, j));
+
+            if( dataItem.empty() )
+                eachCol.copyTo(dataItem);
+            else
+                hconcat(dataItem, eachCol, dataItem);
+        }
+
+        if( rowOfData.empty() )
+            dataItem.copyTo(rowOfData);
+        else
+            hconcat(rowOfData, dataItem, rowOfData);
+
+        if( rowOfData.cols >= inputFrame.cols )
+        {
+            if( decompresedData.empty() )
+                rowOfData.copyTo(decompresedData);
+            else
+                vconcat(decompresedData, rowOfData, decompresedData);
+
+            rowOfData.release();
+            rowOfData = Mat();
+        }
+    }
+    qDebug()<<"Frame reconstructed: Completed!";
+    qDebug()<<"decompresedData size: "<<decompresedData.rows<<" , "<<decompresedData.cols;
 }
 
 double MainWindow::sigmoidFunction(double input)

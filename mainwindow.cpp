@@ -22,6 +22,7 @@ void MainWindow::on_train_button_clicked()
     ui->imgAdd_lineEdit->setText(fileAddress);
     Mat inputFrame, sourceFrame = imread(fileAddress.toStdString());
     cvtColor(sourceFrame, inputFrame, CV_RGB2GRAY);
+    qDebug()<<"Read Image: Complete!";
 
     // Generating train data set
     srand (time(NULL));
@@ -30,19 +31,32 @@ void MainWindow::on_train_button_clicked()
     {
         int cols = rand() % (inputFrame.cols - blockSize);
         int rows = rand() % (inputFrame.rows - blockSize);
-        Mat dataItem, tmp = inputFrame(Rect(cols ,rows , blockSize, blockSize));
-        tmp.convertTo(dataItem, CV_32F);
-        train_set.push_back(dataItem);
+        Mat tmp, tmp2 = inputFrame(Rect(rows ,cols , blockSize, blockSize));
+        Mat dataItem(blockSize*blockSize, 1, CV_32F);
+        tmp2.convertTo(tmp, CV_32F);
+        for(int r = 0; r < blockSize; r++)
+        {
+            for(int c = 0; c < blockSize; c++)
+            {
+                dataItem.at<uchar>(r*blockSize + c ,0) = tmp.at<uchar>(r ,c);
+            }
+        }
+
+        if( train_set.empty() )
+            dataItem.copyTo(train_set);
+        else
+            hconcat(train_set, dataItem, train_set);
     }
+    qDebug()<<"Generating train data: Complete!";
 
     //Training
     FileStorage fs("nn.yml", FileStorage::WRITE);
 
-    int input_neurons = 8; // It should be equals to number of cols
-    int hidden_neurons = 4;
-    int output_neurons = 8;
+    int input_neurons = 64; // It should be equals to number of cols
+    int hidden_neurons = 16;
+    int output_neurons = 64;
 
-    Ptr<ml::TrainData> train_data = ml::TrainData::create(train_set, ml::ROW_SAMPLE, train_set);
+    Ptr<ml::TrainData> train_data = ml::TrainData::create(train_set, ml::COL_SAMPLE, train_set);
 
     Ptr<ml::ANN_MLP> neural_network = ml::ANN_MLP::create();
     neural_network->setTrainMethod(ml::ANN_MLP::BACKPROP);
@@ -62,5 +76,32 @@ void MainWindow::on_train_button_clicked()
     if (neural_network->isTrained()) {
         neural_network->write(fs);
         qDebug()<< "It's OK!";
+    }
+    fs.release();
+    qDebug()<<"Training: Complete!";
+
+    //Compressing
+    Mat newData, padFrame, compresedData;
+    copyMakeBorder( inputFrame, padFrame, 0, blockSize, 0, blockSize, BORDER_REPLICATE);
+    for(int r = 0; r*blockSize < inputFrame.rows; r++)
+    {
+        for(int c = 0; c*blockSize < inputFrame.cols; c++)
+        {
+            Mat dataItem(blockSize*blockSize, 1, CV_32F);
+            Mat tmp, tmp2 = padFrame(Rect(r*blockSize ,c*blockSize , blockSize, blockSize));
+            tmp2.convertTo(tmp, CV_32F);
+            for(int i = 0; i < blockSize; i++)
+            {
+                for(int j = 0; j < blockSize; j++)
+                {
+                    dataItem.at<uchar>(i*blockSize + j ,0) = tmp.at<uchar>(i ,j);
+                }
+            }
+
+            if( newData.empty() )
+                dataItem.copyTo(newData);
+            else
+                hconcat(newData, dataItem, newData);
+        }
     }
 }

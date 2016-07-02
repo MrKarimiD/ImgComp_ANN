@@ -7,8 +7,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     blockSize = 8;
-    numberOfTrainData = 1000;
-    test = 1;
+    numberOfTrainData = 100;
 }
 
 MainWindow::~MainWindow()
@@ -84,7 +83,6 @@ void MainWindow::on_train_button_clicked()
     //Compressing
     Mat newData, padFrame, compresedData;
     copyMakeBorder( inputFrame, padFrame, 0, blockSize, 0, blockSize, BORDER_REPLICATE);
-    imshow("pad",padFrame);
     for(int r = 0; r*blockSize < inputFrame.rows; r++)
     {
         for(int c = 0; c*blockSize < inputFrame.cols; c++)
@@ -130,7 +128,6 @@ void MainWindow::on_train_button_clicked()
     }
     qDebug()<<"Frame Compressed: Completed!";
     qDebug()<<"Compressed size: "<<compresedData.rows<<" , "<<compresedData.cols;
-    test++;
 
     Mat outputData, decompresedData;
     //Decompressing
@@ -201,7 +198,5 @@ void MainWindow::on_train_button_clicked()
 
 double MainWindow::sigmoidFunction(double input)
 {
-    if(test == 0)
-        qDebug()<<"input: "<<input;
     return 1/(1+exp(-input));
 }
